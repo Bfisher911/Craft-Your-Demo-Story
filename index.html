@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Craft Your Demo Story</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom CSS for transitions, animations, and specific styling not easily done with Tailwind */
+
+        /* Base styles for Inter font */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            color: #334155; /* Dark slate text */
+        }
+
+        /* Card flip effect for preview - FINAL REVISION */
+        .card-flip-container {
+            perspective: 1000px; /* Establishes a 3D context */
+            /* This container acts as a wrapper for perspective, no direct styling for height/width */
+        }
+
+        .card-inner {
+            position: relative; /* Essential for absolute positioning of card-back */
+            width: 100%;
+            height: auto; /* Height will be determined by the content of card-front */
+            transition: transform 0.6s; /* Smooth transition for the flip */
+            transform-style: preserve-3d; /* Ensures child elements are positioned in 3D space */
+            border-radius: 0.75rem; /* Match Tailwind's rounded-xl */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Match Tailwind's shadow-md */
+            /* Background and border are now applied directly to card-front and card-back */
+        }
+
+        .card-flip-container:hover .card-inner {
+            transform: rotateY(180deg); /* Flip on hover */
+        }
+
+        .card-front, .card-back {
+            -webkit-backface-visibility: hidden; /* Hide the back of the card during flip */
+            backface-visibility: hidden;
+            border-radius: 0.75rem; /* Match Tailwind's rounded-xl */
+            padding: 1rem; /* Add consistent padding to the card faces */
+            display: flex; /* Use flex for content alignment */
+            flex-direction: column;
+            justify-content: flex-start; /* Align content to the top of the card */
+        }
+
+        .card-front {
+            /* This is the default visible side and determines the height of card-inner */
+            position: relative; /* Added to ensure z-index works correctly against card-back */
+            z-index: 2; /* Ensure front is on top initially */
+            min-height: 120px; /* Added a minimum height to ensure cards are always visible */
+        }
+
+        .card-back {
+            position: absolute; /* Position absolute relative to card-inner */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%; /* Take full height of card-inner */
+            transform: rotateY(180deg); /* Position the back face */
+            z-index: 1; /* Ensure back is behind initially */
+        }
+
+        /* Ensure text within preview cards wraps correctly */
+        #preview-act1, #preview-act2, #preview-act3 {
+            overflow-wrap: break-word;
+            word-wrap: break-word; /* For older browsers */
+        }
+
+
+        /* Risk card dragging styles */
+        .risk-card.dragging {
+            opacity: 0.5; /* Visual feedback when dragging */
+            border: 2px dashed #60a5fa; /* Blue dashed border */
+        }
+
+        .drop-zone.drag-over {
+            background-color: #dbeafe; /* Light blue background when draggable item is over */
+            border: 2px dashed #3b82f6; /* Blue dashed border */
+        }
+
+        /* Timer flashing animation */
+        @keyframes flash {
+            0% { background-color: #fef2f2; } /* Red-50 */
+            50% { background-color: #fee2e2; } /* Red-100 */
+            100% { background-color: #fef2f2; }
+        }
+
+        .timer-flash {
+            animation: flash 0.5s infinite alternate; /* Apply flash animation */
+        }
+
+        /* Tooltip styles */
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .tooltip-content {
+            visibility: hidden;
+            background-color: #334155; /* Dark slate background */
+            color: #fff;
+            text-align: center;
+            border-radius: 0.375rem; /* rounded-md */
+            padding: 0.5rem 0.75rem;
+            position: absolute;
+            z-index: 1000; /* High z-index to appear above other content */
+            bottom: 125%; /* Position above the text */
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+            min-width: 200px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .tooltip-content::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #334155 transparent transparent transparent; /* Arrow pointing down */
+        }
+
+        .tooltip-container:hover .tooltip-content,
+        .tooltip-container.active .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Custom modal for alerts */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black overlay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000; /* Higher than tooltips */
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+        }
+
+        .modal-close-button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            cursor: pointer;
+            color: #64748b; /* slate-500 */
+        }
+
+        /* Accordion styles for mobile */
+        .accordion-header {
+            cursor: pointer;
+            padding: 1rem;
+            background-color: #e2e8f0; /* slate-200 */
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            padding: 0 1rem;
+        }
+
+        .accordion-content.open {
+            max-height: 1000px; /* Sufficiently large value to allow content to expand */
+            padding-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <h1 class="text-4xl font-bold text-center mb-8 text-indigo-700">Craft Your Demo Story</h1>
+
+    <div class="flex flex-col md:flex-row gap-8 max-w-7xl mx-auto">
+
+        <!-- Left Panel: Narrative Builder & Risk Planner -->
+        <div class="md:w-1/2 flex flex-col gap-8">
+
+            <!-- Narrative Builder Section -->
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <div class="accordion-header md:hidden" aria-expanded="true" aria-controls="narrative-content">
+                    <h2 class="text-2xl font-semibold text-indigo-600">Narrative Builder</h2>
+                    <span class="accordion-icon">&#9660;</span> <!-- Down arrow -->
+                </div>
+                <div id="narrative-content" class="accordion-content open md:max-h-full md:p-0">
+                    <h2 class="hidden md:block text-2xl font-semibold text-indigo-600 mb-4">Narrative Builder</h2>
+                    <p class="text-gray-600 mb-6">Outline your demo's story arc. As you type, the preview cards will update.</p>
+
+                    <!-- Act I: Problem -->
+                    <div class="mb-6">
+                        <label for="act1" class="block text-lg font-medium text-gray-700 mb-2">Act I: Problem</label>
+                        <textarea id="act1" rows="4" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
+                            placeholder="Introduce the core problem your audience faces. What pain points do they experience?"
+                            aria-label="Act 1 Problem description"></textarea>
+                    </div>
+
+                    <!-- Act II: Solution Live-Step -->
+                    <div class="mb-6">
+                        <label for="act2" class="block text-lg font-medium text-gray-700 mb-2">Act II: Solution Live-Step</label>
+                        <textarea id="act2" rows="4" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
+                            placeholder="Show how your solution directly addresses the problem. Focus on a key live demonstration step."
+                            aria-label="Act 2 Solution Live-Step description"></textarea>
+                    </div>
+
+                    <!-- Act III: Impact -->
+                    <div class="mb-6">
+                        <label for="act3" class="block text-lg font-medium text-gray-700 mb-2">Act III: Impact</label>
+                        <textarea id="act3" rows="4" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 shadow-sm"
+                            placeholder="Conclude with the tangible benefits and positive impact your solution brings. What does success look like?"
+                            aria-label="Act 3 Impact description"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Planner Matrix Section -->
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <div class="accordion-header md:hidden" aria-expanded="true" aria-controls="risk-content">
+                    <h2 class="text-2xl font-semibold text-indigo-600">Risk Planner Matrix</h2>
+                    <span class="accordion-icon">&#9660;</span> <!-- Down arrow -->
+                </div>
+                <div id="risk-content" class="accordion-content open md:max-h-full md:p-0">
+                    <h2 class="hidden md:block text-2xl font-semibold text-indigo-600 mb-4">Risk Planner Matrix</h2>
+                    <p class="text-gray-600 mb-6">Drag and drop common demo risks into the matrix to plan mitigations.</p>
+
+                    <!-- Draggable Risk Cards -->
+                    <div id="risk-cards-container" class="flex flex-wrap gap-3 mb-6 justify-center">
+                        <!-- Default risk cards will be populated by JavaScript -->
+                    </div>
+
+                    <!-- 2x2 Risk Matrix -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Top Row Labels -->
+                        <div class="col-span-1 text-center text-sm font-semibold text-gray-600">Low Probability</div>
+                        <div class="col-span-1 text-center text-sm font-semibold text-gray-600">High Probability</div>
+
+                        <!-- Low Impact Row -->
+                        <div class="col-span-2 text-center text-sm font-semibold text-gray-600 -mb-2">Low Impact</div>
+                        <div id="drop-zone-low-low" class="drop-zone border-2 border-gray-300 rounded-lg p-4 h-32 flex items-center justify-center text-gray-400 text-sm bg-gray-50 transition-colors duration-200"
+                            aria-label="Drop zone for low probability, low impact risks"></div>
+                        <div id="drop-zone-high-low" class="drop-zone border-2 border-gray-300 rounded-lg p-4 h-32 flex items-center justify-center text-gray-400 text-sm bg-gray-50 transition-colors duration-200"
+                            aria-label="Drop zone for high probability, low impact risks"></div>
+
+                        <!-- High Impact Row -->
+                        <div class="col-span-2 text-center text-sm font-semibold text-gray-600 -mb-2">High Impact</div>
+                        <div id="drop-zone-low-high" class="drop-zone border-2 border-gray-300 rounded-lg p-4 h-32 flex items-center justify-center text-gray-400 text-sm bg-gray-50 transition-colors duration-200"
+                            aria-label="Drop zone for low probability, high impact risks"></div>
+                        <div id="drop-zone-high-high" class="drop-zone border-2 border-gray-300 rounded-lg p-4 h-32 flex items-center justify-center text-gray-400 text-sm bg-gray-50 transition-colors duration-200"
+                            aria-label="Drop zone for high probability, high impact risks"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Preview, Timer, Fallback Video -->
+        <div class="md:w-1/2 flex flex-col gap-8">
+
+            <!-- Live Preview Card Stack Section -->
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <div class="accordion-header md:hidden" aria-expanded="true" aria-controls="preview-content">
+                    <h2 class="text-2xl font-semibold text-indigo-600">Live Preview</h2>
+                    <span class="accordion-icon">&#9660;</span> <!-- Down arrow -->
+                </div>
+                <div id="preview-content" class="accordion-content open md:max-h-full md:p-0">
+                    <h2 class="hidden md:block text-2xl font-semibold text-indigo-600 mb-4">Live Preview</h2>
+                    <p class="text-gray-600 mb-6">See how your narrative translates into demo slides.</p>
+
+                    <div class="flex flex-col gap-6">
+                        <!-- Act I Card -->
+                        <div class="card-flip-container">
+                            <div class="card-inner">
+                                <div class="card-front bg-blue-50 border border-blue-200">
+                                    <div class="flex items-center mb-3">
+                                        <div class="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded-full text-lg font-bold mr-3">1</div>
+                                        <h3 class="text-xl font-semibold text-blue-800">Act I: Problem</h3>
+                                    </div>
+                                    <p id="preview-act1" class="text-gray-700 text-sm leading-relaxed"></p>
+                                </div>
+                                <div class="card-back bg-blue-100 flex items-center justify-center text-blue-700 text-lg font-medium border border-blue-200">
+                                    Back of Act I Card
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Act II Card -->
+                        <div class="card-flip-container">
+                            <div class="card-inner">
+                                <div class="card-front bg-green-50 border border-green-200">
+                                    <div class="flex items-center mb-3">
+                                        <div class="w-8 h-8 flex items-center justify-center bg-green-500 text-white rounded-full text-lg font-bold mr-3">2</div>
+                                        <h3 class="text-xl font-semibold text-green-800">Act II: Solution Live-Step</h3>
+                                    </div>
+                                    <p id="preview-act2" class="text-gray-700 text-sm leading-relaxed"></p>
+                                </div>
+                                <div class="card-back bg-green-100 flex items-center justify-center text-green-700 text-lg font-medium border border-green-200">
+                                    Back of Act II Card
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Act III Card -->
+                        <div class="card-flip-container">
+                            <div class="card-inner">
+                                <div class="card-front bg-purple-50 border border-purple-200">
+                                    <div class="flex items-center mb-3">
+                                        <div class="w-8 h-8 flex items-center justify-center bg-purple-500 text-white rounded-full text-lg font-bold mr-3">3</div>
+                                        <h3 class="text-xl font-semibold text-purple-800">Act III: Impact</h3>
+                                    </div>
+                                    <p id="preview-act3" class="text-gray-700 text-sm leading-relaxed"></p>
+                                </div>
+                                <div class="card-back bg-purple-100 flex items-center justify-center text-purple-700 text-lg font-medium border border-purple-200">
+                                    Back of Act III Card
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rehearsal Timer Section -->
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <div class="accordion-header md:hidden" aria-expanded="true" aria-controls="timer-content">
+                    <h2 class="text-2xl font-semibold text-indigo-600">Rehearsal Timer</h2>
+                    <span class="accordion-icon">&#9660;</span> <!-- Down arrow -->
+                </div>
+                <div id="timer-content" class="accordion-content open md:max-h-full md:p-0">
+                    <h2 class="hidden md:block text-2xl font-semibold text-indigo-600 mb-4">Rehearsal Timer</h2>
+                    <p class="text-gray-600 mb-6">Practice your demo against the clock.</p>
+
+                    <div id="timer-display" class="text-6xl font-extrabold text-center text-indigo-700 mb-6" aria-live="polite">05:00</div>
+                    <div class="flex justify-center gap-4">
+                        <button id="start-timer" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105"
+                            aria-label="Start rehearsal timer">Start</button>
+                        <button id="stop-timer" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105"
+                            aria-label="Stop rehearsal timer">Stop</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fallback Video Toggle Section -->
+            <div class="bg-white p-6 rounded-xl shadow-lg">
+                <div class="accordion-header md:hidden" aria-expanded="true" aria-controls="video-content">
+                    <h2 class="text-2xl font-semibold text-indigo-600">Fallback Video Toggle</h2>
+                    <span class="accordion-icon">&#9660;</span> <!-- Down arrow -->
+                </div>
+                <div id="video-content" class="accordion-content open md:max-h-full md:p-0">
+                    <h2 class="hidden md:block text-2xl font-semibold text-indigo-600 mb-4">Fallback Video Toggle</h2>
+                    <p class="text-gray-600 mb-6">Prepare a backup video in case of live demo issues.</p>
+
+                    <div class="mb-4">
+                        <label for="video-upload" class="block text-lg font-medium text-gray-700 mb-2">Upload MP4 or Drag Placeholder</label>
+                        <div class="flex items-center justify-center w-full">
+                            <label for="video-upload" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                                    </svg>
+                                    <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                                    <p class="text-xs text-gray-500">MP4 (MAX. 10MB)</p>
+                                </div>
+                                <input id="video-upload" type="file" class="hidden" accept="video/mp4" />
+                            </label>
+                        </div>
+                        <p id="video-file-name" class="text-sm text-gray-500 mt-2 text-center"></p>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="text-lg font-medium text-gray-700">Use video if error:</span>
+                        <label for="fallback-toggle" class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="fallback-toggle" class="sr-only peer" aria-label="Toggle fallback video on or off">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                            <span class="ml-3 text-sm font-medium text-gray-900" id="toggle-status">Off</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip Pop-up Structure (hidden by default) -->
+    <div id="tooltip-modal-overlay" class="modal-overlay hidden">
+        <div class="modal-content relative">
+            <button class="modal-close-button" aria-label="Close tooltip">&times;</button>
+            <h3 id="tooltip-modal-title" class="text-xl font-semibold text-indigo-700 mb-4"></h3>
+            <p id="tooltip-modal-body" class="text-gray-700"></p>
+        </div>
+    </div>
+
+    <!-- Custom Alert/Message Box Structure (hidden by default) -->
+    <div id="custom-alert-overlay" class="modal-overlay hidden">
+        <div class="modal-content relative">
+            <button class="modal-close-button" aria-label="Close alert">&times;</button>
+            <h3 id="alert-title" class="text-xl font-semibold text-red-600 mb-4"></h3>
+            <p id="alert-message" class="text-gray-700"></p>
+            <button id="alert-ok-button" class="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration Variables (Easily Tweakable) ---
+        const DEFAULT_TIMER_SECONDS = 300; // 5 minutes (300 seconds)
+        const TIMER_FLASH_CLASS = 'timer-flash'; // CSS class for timer flashing
+        const DEFAULT_RISK_CARDS = [
+            { id: 'api-failure', text: 'API Failure', mitigation: 'Have a pre-recorded video of the API call working, or mock data ready.' },
+            { id: 'latency-spike', text: 'Latency Spike', mitigation: 'Use a local development environment or pre-load data to minimize network dependency.' },
+            { id: 'projector-crash', text: 'Projector Crash', mitigation: 'Have a backup display (e.g., laptop screen) or a PDF of key slides ready.' },
+            { id: 'network-outage', text: 'Network Outage', mitigation: 'Prepare an offline version of your demo or screenshots of critical steps.' },
+            { id: 'software-bug', text: 'Software Bug', mitigation: 'Identify a "golden path" that avoids known bugs, or have a previous stable version ready.' }
+        ];
+        // You can add more risks and their mitigations here.
+
+        // --- DOM Element References ---
+        const act1Textarea = document.getElementById('act1');
+        const act2Textarea = document.getElementById('act2');
+        const act3Textarea = document.getElementById('act3');
+
+        const previewAct1 = document.getElementById('preview-act1');
+        const previewAct2 = document.getElementById('preview-act2');
+        const previewAct3 = document.getElementById('preview-act3');
+
+        const riskCardsContainer = document.getElementById('risk-cards-container');
+        const dropZones = document.querySelectorAll('.drop-zone');
+
+        const timerDisplay = document.getElementById('timer-display');
+        const startTimerBtn = document.getElementById('start-timer');
+        const stopTimerBtn = document.getElementById('stop-timer');
+
+        const videoUploadInput = document.getElementById('video-upload');
+        const videoFileNameDisplay = document.getElementById('video-file-name');
+        const fallbackToggle = document.getElementById('fallback-toggle');
+        const toggleStatusSpan = document.getElementById('toggle-status');
+
+        const tooltipModalOverlay = document.getElementById('tooltip-modal-overlay');
+        const tooltipModalTitle = document.getElementById('tooltip-modal-title');
+        const tooltipModalBody = document.getElementById('tooltip-modal-body');
+        const tooltipModalCloseButton = tooltipModalOverlay.querySelector('.modal-close-button');
+
+        const customAlertOverlay = document.getElementById('custom-alert-overlay');
+        const alertTitle = document.getElementById('alert-title');
+        const alertMessage = document.getElementById('alert-message');
+        const alertOkButton = document.getElementById('alert-ok-button');
+        const alertCloseButton = customAlertOverlay.querySelector('.modal-close-button');
+
+        // --- Global Variables for Timer ---
+        let timerInterval;
+        let timeLeft = DEFAULT_TIMER_SECONDS;
+        let isTimerRunning = false;
+
+        // --- Tooltip Definitions ---
+        const tooltips = {
+            "golden path": "The primary, ideal flow of your demo that showcases the core value proposition without encountering errors or detours.",
+            "latency warm-up": "The process of pre-loading data or running initial queries to ensure the system is responsive and avoids slow loading times during the actual demo."
+            // Add more jargon and their definitions here
+        };
+
+        // --- Utility Functions ---
+
+        /**
+         * Displays a custom alert message.
+         * @param {string} title - The title of the alert.
+         * @param {string} message - The message content of the alert.
+         */
+        function showAlert(title, message) {
+            alertTitle.textContent = title;
+            alertMessage.textContent = message;
+            customAlertOverlay.classList.remove('hidden');
+            customAlertOverlay.setAttribute('aria-modal', 'true');
+            customAlertOverlay.setAttribute('role', 'alertdialog');
+            alertOkButton.focus(); // Focus OK button for accessibility
+        }
+
+        /**
+         * Closes the custom alert message.
+         */
+        function closeAlert() {
+            customAlertOverlay.classList.add('hidden');
+            customAlertOverlay.removeAttribute('aria-modal');
+            customAlertOverlay.removeAttribute('role');
+        }
+
+        /**
+         * Displays a tooltip modal with the given title and body.
+         * @param {string} title - The title for the tooltip.
+         * @param {string} body - The content for the tooltip.
+         */
+        function showTooltipModal(title, body) {
+            tooltipModalTitle.textContent = title;
+            tooltipModalBody.textContent = body;
+            tooltipModalOverlay.classList.remove('hidden');
+            tooltipModalOverlay.setAttribute('aria-modal', 'true');
+            tooltipModalOverlay.setAttribute('role', 'dialog');
+            tooltipModalCloseButton.focus(); // Focus close button for accessibility
+        }
+
+        /**
+         * Closes the tooltip modal.
+         */
+        function closeTooltipModal() {
+            tooltipModalOverlay.classList.add('hidden');
+            tooltipModalOverlay.removeAttribute('aria-modal');
+            tooltipModalOverlay.removeAttribute('role');
+        }
+
+        // --- Narrative Builder Logic ---
+
+        /**
+         * Updates the preview cards with the content from the text areas.
+         */
+        function updatePreview() {
+            previewAct1.textContent = act1Textarea.value || "Start typing your problem statement here...";
+            previewAct2.textContent = act2Textarea.value || "Describe your solution's key live step...";
+            previewAct3.textContent = act3Textarea.value || "Explain the impact and benefits...";
+        }
+
+        // Add event listeners for text area input
+        act1Textarea.addEventListener('input', updatePreview);
+        act2Textarea.addEventListener('input', updatePreview);
+        act3Textarea.addEventListener('input', updatePreview);
+
+        // Initial preview update on load
+        updatePreview();
+
+        // --- Risk Planner Matrix Logic ---
+
+        /**
+         * Populates the draggable risk cards based on the DEFAULT_RISK_CARDS array.
+         */
+        function populateRiskCards() {
+            riskCardsContainer.innerHTML = ''; // Clear existing cards
+            DEFAULT_RISK_CARDS.forEach(risk => {
+                const card = document.createElement('div');
+                card.id = risk.id;
+                card.classList.add(
+                    'risk-card', 'bg-red-100', 'text-red-800', 'font-medium', 'py-2', 'px-4',
+                    'rounded-full', 'shadow-sm', 'cursor-grab', 'transition-all', 'duration-200',
+                    'hover:bg-red-200', 'hover:shadow-md', 'active:cursor-grabbing'
+                );
+                card.textContent = risk.text;
+                card.setAttribute('draggable', 'true');
+                card.setAttribute('tabindex', '0'); // Make cards keyboard focusable
+                card.setAttribute('aria-grabbed', 'false'); // ARIA for drag state
+                card.dataset.mitigation = risk.mitigation; // Store mitigation tip in dataset
+                riskCardsContainer.appendChild(card);
+            });
+        }
+
+        // Call to populate risk cards on load
+        populateRiskCards();
+
+        let draggedItem = null; // Variable to store the currently dragged item
+
+        // Event listeners for draggable risk cards
+        riskCardsContainer.addEventListener('dragstart', (e) => {
+            if (e.target.classList.contains('risk-card')) {
+                draggedItem = e.target;
+                e.target.classList.add('dragging');
+                e.dataTransfer.setData('text/plain', e.target.id); // Set data for drag operation
+                e.target.setAttribute('aria-grabbed', 'true');
+            }
+        });
+
+        riskCardsContainer.addEventListener('dragend', (e) => {
+            if (e.target.classList.contains('risk-card')) {
+                e.target.classList.remove('dragging');
+                draggedItem = null;
+                e.target.setAttribute('aria-grabbed', 'false');
+            }
+        });
+
+        // Event listeners for drop zones
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault(); // Allow drop
+                zone.classList.add('drag-over'); // Highlight drop zone
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('drag-over'); // Remove highlight
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+
+                const data = e.dataTransfer.getData('text/plain');
+                const droppedCard = document.getElementById(data);
+
+                if (droppedCard && droppedCard.classList.contains('risk-card')) {
+                    // Append the card to the drop zone
+                    zone.appendChild(droppedCard);
+                    // Remove cursor-grab and add cursor-default for dropped cards
+                    droppedCard.classList.remove('cursor-grab', 'active:cursor-grabbing', 'hover:bg-red-200');
+                    droppedCard.classList.add('cursor-default', 'bg-red-200', 'hover:bg-red-200'); // Keep it red-200 after drop
+
+                    // Show mitigation tips
+                    showAlert('Mitigation Tip for ' + droppedCard.textContent, droppedCard.dataset.mitigation);
+                }
+            });
+        });
+
+        // --- Rehearsal Timer Logic ---
+
+        /**
+         * Formats seconds into MM:SS string.
+         * @param {number} totalSeconds - The total number of seconds.
+         * @returns {string} Formatted time string (MM:SS).
+         */
+        function formatTime(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        /**
+         * Updates the timer display and handles countdown logic.
+         */
+        function updateTimer() {
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                timerDisplay.textContent = "00:00";
+                timerDisplay.classList.add(TIMER_FLASH_CLASS); // Start flashing
+                showAlert('Time\'s Up!', 'Your rehearsal time has ended. How did you do?');
+                startTimerBtn.disabled = false; // Re-enable start button
+                return;
+            }
+
+            timeLeft--;
+            timerDisplay.textContent = formatTime(timeLeft);
+        }
+
+        /**
+         * Starts the rehearsal timer.
+         */
+        function startTimer() {
+            if (!isTimerRunning) {
+                isTimerRunning = true;
+                timerDisplay.classList.remove(TIMER_FLASH_CLASS); // Stop flashing if it was
+                timerInterval = setInterval(updateTimer, 1000);
+                startTimerBtn.disabled = true; // Disable start button while running
+            }
+        }
+
+        /**
+         * Stops the rehearsal timer and resets it.
+         */
+        function stopTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timeLeft = DEFAULT_TIMER_SECONDS; // Reset time
+            timerDisplay.textContent = formatTime(timeLeft);
+            timerDisplay.classList.remove(TIMER_FLASH_CLASS); // Ensure no flashing
+            startTimerBtn.disabled = false; // Re-enable start button
+        }
+
+        // Add event listeners for timer buttons
+        startTimerBtn.addEventListener('click', startTimer);
+        stopTimerBtn.addEventListener('click', stopTimer);
+
+        // Initial timer display setup
+        timerDisplay.textContent = formatTime(DEFAULT_TIMER_SECONDS);
+
+        // --- Fallback Video Toggle Logic ---
+
+        // Handle file input change (for display purposes only, no actual upload)
+        videoUploadInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                videoFileNameDisplay.textContent = `Selected: ${file.name}`;
+            } else {
+                videoFileNameDisplay.textContent = '';
+            }
+        });
+
+        // Handle drag and drop for placeholder
+        const videoDropArea = document.querySelector('label[for="video-upload"]');
+        videoDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            videoDropArea.classList.add('border-indigo-500', 'bg-indigo-50'); // Highlight drop area
+        });
+
+        videoDropArea.addEventListener('dragleave', () => {
+            videoDropArea.classList.remove('border-indigo-500', 'bg-indigo-50'); // Remove highlight
+        });
+
+        videoDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            videoDropArea.classList.remove('border-indigo-500', 'bg-indigo-50');
+
+            // Simulate file drop for placeholder
+            videoFileNameDisplay.textContent = 'Placeholder video dropped!';
+            // In a real app, you would handle the file data here (e.g., read it or upload it)
+        });
+
+        // Toggle switch logic
+        fallbackToggle.addEventListener('change', () => {
+            if (fallbackToggle.checked) {
+                toggleStatusSpan.textContent = 'On';
+                toggleStatusSpan.classList.remove('text-gray-900');
+                toggleStatusSpan.classList.add('text-green-600');
+            } else {
+                toggleStatusSpan.textContent = 'Off';
+                toggleStatusSpan.classList.remove('text-green-600');
+                toggleStatusSpan.classList.add('text-gray-900');
+            }
+        });
+
+        // --- Tooltip Pop-ups Logic ---
+
+        /**
+         * Replaces specific jargon words in a given text with a span that triggers a tooltip.
+         * @param {string} text - The input text.
+         * @returns {string} The text with jargon wrapped in tooltip spans.
+         */
+        function applyTooltipsToText(text) {
+            let processedText = text;
+            for (const jargon in tooltips) {
+                const regex = new RegExp(`\\b(${jargon})\\b`, 'gi'); // Case-insensitive, whole word
+                processedText = processedText.replace(regex, `<span class="tooltip-container text-indigo-600 font-semibold border-b border-dashed border-indigo-400" data-jargon="${jargon}">$1</span>`);
+            }
+            return processedText;
+        }
+
+        /**
+         * Attaches click listeners to dynamically created tooltip spans.
+         */
+        function attachTooltipListeners() {
+            document.querySelectorAll('.tooltip-container').forEach(span => {
+                span.removeEventListener('click', handleTooltipClick); // Prevent duplicate listeners
+                span.addEventListener('click', handleTooltipClick);
+            });
+        }
+
+        /**
+         * Handles click events on tooltip spans to show the modal.
+         * @param {Event} e - The click event object.
+         */
+        function handleTooltipClick(e) {
+            const jargon = e.currentTarget.dataset.jargon;
+            if (tooltips[jargon]) {
+                showTooltipModal(jargon.charAt(0).toUpperCase() + jargon.slice(1), tooltips[jargon]);
+            }
+        }
+
+        // Attach listeners to close buttons for modal dialogs
+        tooltipModalCloseButton.addEventListener('click', closeTooltipModal);
+        alertOkButton.addEventListener('click', closeAlert);
+        alertCloseButton.addEventListener('click', closeAlert);
+
+        // Close modals with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (!customAlertOverlay.classList.contains('hidden')) {
+                    closeAlert();
+                }
+                if (!tooltipModalOverlay.classList.contains('hidden')) {
+                    closeTooltipModal();
+                }
+            }
+        });
+
+        // --- Accordion for Mobile Layout ---
+        document.querySelectorAll('.accordion-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const content = header.nextElementSibling; // The content div after the header
+                const icon = header.querySelector('.accordion-icon');
+
+                // Toggle the 'open' class on the content
+                content.classList.toggle('open');
+                // Toggle ARIA expanded attribute
+                const isExpanded = header.getAttribute('aria-expanded') === 'true';
+                header.setAttribute('aria-expanded', !isExpanded);
+
+                // Rotate the arrow icon
+                if (content.classList.contains('open')) {
+                    icon.style.transform = 'rotate(180deg)';
+                } else {
+                    icon.style.transform = 'rotate(0deg)';
+                }
+            });
+        });
+
+        // --- Initial setup for tooltips on preview content ---
+        // This function will be called whenever the preview content might change
+        function updatePreviewWithTooltips() {
+            previewAct1.innerHTML = applyTooltipsToText(act1Textarea.value || "Start typing your problem statement here...");
+            previewAct2.innerHTML = applyTooltipsToText(act2Textarea.value || "Describe your solution's key live step...");
+            previewAct3.innerHTML = applyTooltipsToText(act3Textarea.value || "Explain the impact and benefits...");
+            attachTooltipListeners(); // Re-attach listeners as content might have changed
+        }
+
+        // Override the original updatePreview to include tooltip processing
+        act1Textarea.addEventListener('input', updatePreviewWithTooltips);
+        act2Textarea.addEventListener('input', updatePreviewWithTooltips);
+        act3Textarea.addEventListener('input', updatePreviewWithTooltips);
+
+        // Initial call to set up tooltips on load
+        updatePreviewWithTooltips();
+
+    </script>
+</body>
+</html>
